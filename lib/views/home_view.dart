@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+
+import 'dashboard_view.dart';
+import 'estadisticas_view.dart';
 import 'perfil_view.dart';
+import 'reportes_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -11,42 +15,64 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   int _paginaActual = 0;
 
-  final List<Widget> _paginas = [
-    const Center(
-      child: Text(
-        'Dashboard\n(Integrante 3)',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
-    const Center(
+  final List<Widget> _paginas = const [
+    DashboardView(),
+    Center(
       child: Text(
         'Ingresos y Gastos\n(Integrante 2)',
         textAlign: TextAlign.center,
         style: TextStyle(fontSize: 24),
       ),
     ),
-    const PerfilView(),
+    EstadisticasView(),
+    ReportesView(),
+    PerfilView(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _paginas[_paginaActual],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _paginaActual,
-        selectedItemColor: const Color(0xFF1A237E),
-        onTap: (index) => setState(() => _paginaActual = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+      body: IndexedStack(
+        index: _paginaActual,
+        children: _paginas,
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _paginaActual,
+        indicatorColor:
+            const Color(0xFF1A237E).withValues(alpha: 0.15),
+        labelBehavior:
+            NavigationDestinationLabelBehavior.onlyShowSelected,
+        onDestinationSelected: (index) {
+          setState(() {
+            _paginaActual = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Inicio',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.attach_money),
+            selectedIcon: Icon(Icons.monetization_on),
             label: 'Finanzas',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Estadísticas',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.description_outlined),
+            selectedIcon: Icon(Icons.description),
+            label: 'Reportes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
         ],
       ),
     );
