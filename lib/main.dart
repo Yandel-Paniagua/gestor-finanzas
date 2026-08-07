@@ -22,7 +22,6 @@ class GestorFinanzasApp extends StatelessWidget {
     return MaterialApp(
       title: 'Gestor de Finanzas',
       debugShowCheckedModeBanner: false,
-      useInheritedMediaQuery: true,
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
       theme: ThemeData(

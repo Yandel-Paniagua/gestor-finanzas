@@ -96,8 +96,9 @@ class _LoginViewState extends State<LoginView> {
                         fillColor: Colors.white,
                       ),
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return 'Ingresa tu email';
+                        }
                         if (!val.contains('@')) return 'Email inválido';
                         return null;
                       },
@@ -127,8 +128,9 @@ class _LoginViewState extends State<LoginView> {
                         fillColor: Colors.white,
                       ),
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return 'Ingresa tu contraseña';
+                        }
                         if (val.length < 6) return 'Mínimo 6 caracteres';
                         return null;
                       },

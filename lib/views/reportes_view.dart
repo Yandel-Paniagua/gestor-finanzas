@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/movimiento.dart';
 import '../models/resumen_financiero.dart';
 import '../services/auth_service.dart';
+import '../services/database_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/reporte_pdf_service.dart';
 import '../widgets/resumen_card.dart';
@@ -34,84 +35,24 @@ class _ReportesViewState extends State<ReportesView> {
   }
 
   Future<void> _cargarDatos() async {
-    final usuario = await AuthService.instance.obtenerSesion();
+    setState(() {
+      _cargando = true;
+    });
 
+    final usuario = await AuthService.instance.obtenerSesion();
     _nombreUsuario = usuario?.nombre ?? 'Usuario';
 
-    // Datos temporales hasta conectar SQLite con el Integrante 2.
-    _movimientos = _obtenerDatosPrueba();
+    _movimientos = await DatabaseService.instance.obtenerMovimientosUsuario(
+      usuario?.id ?? 1,
+      mes: _mesSeleccionado,
+    );
 
     _actualizarResumen();
 
-    if (!mounted) {
-      return;
-    }
-
+    if (!mounted) return;
     setState(() {
       _cargando = false;
     });
-  }
-
-  List<Movimiento> _obtenerDatosPrueba() {
-    final ahora = DateTime.now();
-    final usuarioId = 1;
-
-    return [
-      Movimiento(
-        id: 1,
-        usuarioId: usuarioId,
-        tipo: 'ingreso',
-        monto: 45000,
-        categoria: 'Salario',
-        descripcion: 'Salario mensual',
-        fecha: DateTime(ahora.year, ahora.month, 1),
-      ),
-      Movimiento(
-        id: 2,
-        usuarioId: usuarioId,
-        tipo: 'ingreso',
-        monto: 8500,
-        categoria: 'Freelance',
-        descripcion: 'Proyecto adicional',
-        fecha: DateTime(ahora.year, ahora.month, 5),
-      ),
-      Movimiento(
-        id: 3,
-        usuarioId: usuarioId,
-        tipo: 'gasto',
-        monto: 12500,
-        categoria: 'Vivienda',
-        descripcion: 'Pago de alquiler',
-        fecha: DateTime(ahora.year, ahora.month, 2),
-      ),
-      Movimiento(
-        id: 4,
-        usuarioId: usuarioId,
-        tipo: 'gasto',
-        monto: 6200,
-        categoria: 'Alimentación',
-        descripcion: 'Compra del supermercado',
-        fecha: DateTime(ahora.year, ahora.month, 7),
-      ),
-      Movimiento(
-        id: 5,
-        usuarioId: usuarioId,
-        tipo: 'gasto',
-        monto: 3500,
-        categoria: 'Transporte',
-        descripcion: 'Combustible y transporte',
-        fecha: DateTime(ahora.year, ahora.month, 10),
-      ),
-      Movimiento(
-        id: 6,
-        usuarioId: usuarioId,
-        tipo: 'gasto',
-        monto: 1800,
-        categoria: 'Entretenimiento',
-        descripcion: 'Salida de fin de semana',
-        fecha: DateTime(ahora.year, ahora.month, 12),
-      ),
-    ];
   }
 
   void _actualizarResumen() {
@@ -121,15 +62,15 @@ class _ReportesViewState extends State<ReportesView> {
     );
   }
 
-  void _cambiarMes(int cantidad) {
+  Future<void> _cambiarMes(int cantidad) async {
     setState(() {
       _mesSeleccionado = DateTime(
         _mesSeleccionado.year,
         _mesSeleccionado.month + cantidad,
       );
-
-      _actualizarResumen();
     });
+
+    await _cargarDatos();
   }
 
   Future<void> _generarPdf() async {

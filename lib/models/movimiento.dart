@@ -21,6 +21,26 @@ class Movimiento {
 
   bool get esGasto => tipo.toLowerCase() == 'gasto';
 
+  Movimiento copyWith({
+    int? id,
+    int? usuarioId,
+    String? tipo,
+    double? monto,
+    String? categoria,
+    String? descripcion,
+    DateTime? fecha,
+  }) {
+    return Movimiento(
+      id: id ?? this.id,
+      usuarioId: usuarioId ?? this.usuarioId,
+      tipo: tipo ?? this.tipo,
+      monto: monto ?? this.monto,
+      categoria: categoria ?? this.categoria,
+      descripcion: descripcion ?? this.descripcion,
+      fecha: fecha ?? this.fecha,
+    );
+  }
+
   factory Movimiento.fromMap(Map<String, dynamic> map) {
     return Movimiento(
       id: map['id'] as int?,

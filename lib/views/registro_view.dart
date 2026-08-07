@@ -126,8 +126,9 @@ class _RegistroViewState extends State<RegistroView> {
                     fillColor: Colors.white,
                   ),
                   validator: (val) {
-                    if (val == null || val.isEmpty)
+                    if (val == null || val.isEmpty) {
                       return 'Ingresa tu contraseña';
+                    }
                     if (val.length < 6) return 'Mínimo 6 caracteres';
                     return null;
                   },
@@ -148,8 +149,9 @@ class _RegistroViewState extends State<RegistroView> {
                     fillColor: Colors.white,
                   ),
                   validator: (val) {
-                    if (val != _passwordCtrl.text)
+                    if (val != _passwordCtrl.text) {
                       return 'Las contraseñas no coinciden';
+                    }
                     return null;
                   },
                 ),

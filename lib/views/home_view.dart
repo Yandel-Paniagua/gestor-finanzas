@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'dashboard_view.dart';
 import 'estadisticas_view.dart';
+import 'movimientos_view.dart';
 import 'perfil_view.dart';
 import 'reportes_view.dart';
 
@@ -17,13 +18,7 @@ class _HomeViewState extends State<HomeView> {
 
   final List<Widget> _paginas = const [
     DashboardView(),
-    Center(
-      child: Text(
-        'Ingresos y Gastos\n(Integrante 2)',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 24),
-      ),
-    ),
+    MovimientosView(),
     EstadisticasView(),
     ReportesView(),
     PerfilView(),

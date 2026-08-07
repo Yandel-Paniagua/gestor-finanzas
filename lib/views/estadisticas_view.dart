@@ -2,89 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/movimiento.dart';
+import '../services/auth_service.dart';
 import '../services/dashboard_service.dart';
+import '../services/database_service.dart';
 import '../widgets/grafico_balance.dart';
 import '../widgets/grafico_categorias.dart';
 
-class EstadisticasView extends StatelessWidget {
+class EstadisticasView extends StatefulWidget {
   const EstadisticasView({super.key});
 
-  List<Movimiento> _obtenerDatosPrueba() {
-    final ahora = DateTime.now();
+  @override
+  State<EstadisticasView> createState() => _EstadisticasViewState();
+}
 
-    return [
-      Movimiento(
-        id: 1,
-        usuarioId: 1,
-        tipo: 'ingreso',
-        monto: 45000,
-        categoria: 'Salario',
-        descripcion: 'Salario mensual',
-        fecha: DateTime(ahora.year, ahora.month, 1),
-      ),
-      Movimiento(
-        id: 2,
-        usuarioId: 1,
-        tipo: 'ingreso',
-        monto: 8500,
-        categoria: 'Freelance',
-        descripcion: 'Proyecto adicional',
-        fecha: DateTime(ahora.year, ahora.month, 5),
-      ),
-      Movimiento(
-        id: 3,
-        usuarioId: 1,
-        tipo: 'gasto',
-        monto: 12500,
-        categoria: 'Vivienda',
-        descripcion: 'Pago de alquiler',
-        fecha: DateTime(ahora.year, ahora.month, 2),
-      ),
-      Movimiento(
-        id: 4,
-        usuarioId: 1,
-        tipo: 'gasto',
-        monto: 6200,
-        categoria: 'Alimentación',
-        descripcion: 'Supermercado',
-        fecha: DateTime(ahora.year, ahora.month, 7),
-      ),
-      Movimiento(
-        id: 5,
-        usuarioId: 1,
-        tipo: 'gasto',
-        monto: 3500,
-        categoria: 'Transporte',
-        descripcion: 'Combustible',
-        fecha: DateTime(ahora.year, ahora.month, 10),
-      ),
-      Movimiento(
-        id: 6,
-        usuarioId: 1,
-        tipo: 'gasto',
-        monto: 1800,
-        categoria: 'Entretenimiento',
-        descripcion: 'Salida',
-        fecha: DateTime(ahora.year, ahora.month, 12),
-      ),
-    ];
+class _EstadisticasViewState extends State<EstadisticasView> {
+  final DashboardService _dashboardService = const DashboardService();
+
+  DateTime _mesSeleccionado = DateTime.now();
+  List<Movimiento> _movimientos = [];
+  bool _cargando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarDatos();
+  }
+
+  Future<void> _cargarDatos() async {
+    setState(() {
+      _cargando = true;
+    });
+
+    final usuario = await AuthService.instance.obtenerSesion();
+
+    _movimientos = await DatabaseService.instance.obtenerMovimientosUsuario(
+      usuario?.id ?? 1,
+      mes: _mesSeleccionado,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _cargando = false;
+    });
+  }
+
+  Future<void> _cambiarMes(int cantidad) async {
+    setState(() {
+      _mesSeleccionado = DateTime(
+        _mesSeleccionado.year,
+        _mesSeleccionado.month + cantidad,
+      );
+    });
+
+    await _cargarDatos();
   }
 
   @override
   Widget build(BuildContext context) {
-    const dashboardService = DashboardService();
-    final mesActual = DateTime.now();
-    final movimientos = _obtenerDatosPrueba();
-
-    final resumen = dashboardService.calcularResumen(
-      movimientos,
-      mesActual,
+    final resumen = _dashboardService.calcularResumen(
+      _movimientos,
+      _mesSeleccionado,
     );
 
     final gastosPorCategoria =
-        dashboardService.calcularGastosPorCategoria(
-      movimientos,
-      mesActual,
+        _dashboardService.calcularGastosPorCategoria(
+      _movimientos,
+      _mesSeleccionado,
     );
 
     final porcentajeAhorro = resumen.ingresos <= 0
@@ -113,7 +96,7 @@ class EstadisticasView extends StatelessWidget {
     final nombreMes = DateFormat(
       'MMMM yyyy',
       'es_DO',
-    ).format(mesActual);
+    ).format(_mesSeleccionado);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -123,63 +106,82 @@ class EstadisticasView extends StatelessWidget {
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            nombreMes.toUpperCase(),
-            style: const TextStyle(
-              color: Color(0xFF1A237E),
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+      body: _cargando
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _cargarDatos,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text(
+                    nombreMes.toUpperCase(),
+                    style: const TextStyle(
+                      color: Color(0xFF1A237E),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _IndicadorCard(
+                          titulo: 'Movimientos',
+                          valor:
+                              '${resumen.cantidadIngresos + resumen.cantidadGastos}',
+                          icono: Icons.receipt_long,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _IndicadorCard(
+                          titulo: 'Ahorro',
+                          valor: '${porcentajeAhorro.toStringAsFixed(1)}%',
+                          icono: Icons.savings,
+                          color: porcentajeAhorro >= 0
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _DatoDestacado(
+                    titulo: 'Categoría con mayor gasto',
+                    valor: categoriaMayor,
+                    detalle: formatoMoneda.format(montoCategoriaMayor),
+                    icono: Icons.trending_up,
+                  ),
+                  const SizedBox(height: 20),
+                  GraficoBalance(
+                    ingresos: resumen.ingresos,
+                    gastos: resumen.gastos,
+                  ),
+                  const SizedBox(height: 20),
+                  GraficoCategorias(
+                    gastosPorCategoria: gastosPorCategoria,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'prevMonth',
+            onPressed: () => _cambiarMes(-1),
+            backgroundColor: const Color(0xFF1A237E),
+            child: const Icon(Icons.chevron_left),
           ),
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              Expanded(
-                child: _IndicadorCard(
-                  titulo: 'Movimientos',
-                  valor:
-                      '${resumen.cantidadIngresos + resumen.cantidadGastos}',
-                  icono: Icons.receipt_long,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _IndicadorCard(
-                  titulo: 'Ahorro',
-                  valor: '${porcentajeAhorro.toStringAsFixed(1)}%',
-                  icono: Icons.savings,
-                  color: porcentajeAhorro >= 0
-                      ? Colors.green
-                      : Colors.red,
-                ),
-              ),
-            ],
+          const SizedBox(width: 12),
+          FloatingActionButton(
+            heroTag: 'nextMonth',
+            onPressed: () => _cambiarMes(1),
+            backgroundColor: const Color(0xFF1A237E),
+            child: const Icon(Icons.chevron_right),
           ),
-          const SizedBox(height: 12),
-
-          _DatoDestacado(
-            titulo: 'Categoría con mayor gasto',
-            valor: categoriaMayor,
-            detalle: formatoMoneda.format(montoCategoriaMayor),
-            icono: Icons.trending_up,
-          ),
-          const SizedBox(height: 20),
-
-          GraficoBalance(
-            ingresos: resumen.ingresos,
-            gastos: resumen.gastos,
-          ),
-          const SizedBox(height: 20),
-
-          GraficoCategorias(
-            gastosPorCategoria: gastosPorCategoria,
-          ),
-          const SizedBox(height: 24),
         ],
       ),
     );

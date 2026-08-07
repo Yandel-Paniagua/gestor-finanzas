@@ -5,6 +5,7 @@ import '../models/movimiento.dart';
 import '../models/resumen_financiero.dart';
 import '../services/auth_service.dart';
 import '../services/dashboard_service.dart';
+import '../services/database_service.dart';
 import '../services/presupuesto_service.dart';
 import '../widgets/grafico_balance.dart';
 import '../widgets/grafico_categorias.dart';
@@ -48,13 +49,10 @@ class _DashboardViewState extends State<DashboardView> {
     _usuarioId = usuario?.id ?? 1;
     _nombreUsuario = usuario?.nombre ?? 'Usuario';
 
-    /*
-      DATOS DE PRUEBA TEMPORALES.
-
-      Cuando el Integrante 2 termine el módulo de ingresos y gastos,
-      esta lista se reemplazará por los movimientos obtenidos desde SQLite.
-    */
-    _movimientos = _obtenerDatosPrueba();
+    _movimientos = await DatabaseService.instance.obtenerMovimientosUsuario(
+      _usuarioId,
+      mes: _mesSeleccionado,
+    );
 
     _presupuesto = await PresupuestoService.instance.obtenerPresupuesto(
       usuarioId: _usuarioId,
@@ -84,66 +82,6 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  List<Movimiento> _obtenerDatosPrueba() {
-    final ahora = DateTime.now();
-
-    return [
-      Movimiento(
-        id: 1,
-        usuarioId: _usuarioId,
-        tipo: 'ingreso',
-        monto: 45000,
-        categoria: 'Salario',
-        descripcion: 'Salario mensual',
-        fecha: DateTime(ahora.year, ahora.month, 1),
-      ),
-      Movimiento(
-        id: 2,
-        usuarioId: _usuarioId,
-        tipo: 'ingreso',
-        monto: 8500,
-        categoria: 'Freelance',
-        descripcion: 'Proyecto adicional',
-        fecha: DateTime(ahora.year, ahora.month, 5),
-      ),
-      Movimiento(
-        id: 3,
-        usuarioId: _usuarioId,
-        tipo: 'gasto',
-        monto: 12500,
-        categoria: 'Vivienda',
-        descripcion: 'Pago de alquiler',
-        fecha: DateTime(ahora.year, ahora.month, 2),
-      ),
-      Movimiento(
-        id: 4,
-        usuarioId: _usuarioId,
-        tipo: 'gasto',
-        monto: 6200,
-        categoria: 'Alimentación',
-        descripcion: 'Compra del supermercado',
-        fecha: DateTime(ahora.year, ahora.month, 7),
-      ),
-      Movimiento(
-        id: 5,
-        usuarioId: _usuarioId,
-        tipo: 'gasto',
-        monto: 3500,
-        categoria: 'Transporte',
-        descripcion: 'Combustible y transporte',
-        fecha: DateTime(ahora.year, ahora.month, 10),
-      ),
-      Movimiento(
-        id: 6,
-        usuarioId: _usuarioId,
-        tipo: 'gasto',
-        monto: 1800,
-        categoria: 'Entretenimiento',
-        descripcion: 'Salida de fin de semana',
-        fecha: DateTime(ahora.year, ahora.month, 12),
-      ),
-    ];
-  }
 
   Future<void> _mostrarPresupuesto() async {
     final controlador = TextEditingController(
@@ -151,10 +89,11 @@ class _DashboardViewState extends State<DashboardView> {
           ? _presupuesto.toStringAsFixed(2)
           : '',
     );
+    final parentContext = context;
 
     final resultado = await showDialog<double>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Presupuesto mensual'),
           content: TextField(
@@ -171,7 +110,7 @@ class _DashboardViewState extends State<DashboardView> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.of(dialogContext).pop();
               },
               child: const Text('Cancelar'),
             ),
@@ -179,12 +118,14 @@ class _DashboardViewState extends State<DashboardView> {
               onPressed: () {
                 final texto = controlador.text
                     .trim()
-                    .replaceAll(',', '');
+                    .replaceAll(',', '')
+                    .replaceAll('RD\$ ', '')
+                    .replaceAll('RD\$', '');
 
                 final monto = double.tryParse(texto);
 
                 if (monto == null || monto <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
                     const SnackBar(
                       content: Text('Ingresa un monto válido'),
                     ),
@@ -192,7 +133,7 @@ class _DashboardViewState extends State<DashboardView> {
                   return;
                 }
 
-                Navigator.pop(context, monto);
+                Navigator.of(dialogContext).pop(monto);
               },
               child: const Text('Guardar'),
             ),
@@ -237,6 +178,11 @@ class _DashboardViewState extends State<DashboardView> {
     final presupuesto =
         await PresupuestoService.instance.obtenerPresupuesto(
       usuarioId: _usuarioId,
+      mes: nuevoMes,
+    );
+
+    _movimientos = await DatabaseService.instance.obtenerMovimientosUsuario(
+      _usuarioId,
       mes: nuevoMes,
     );
 
