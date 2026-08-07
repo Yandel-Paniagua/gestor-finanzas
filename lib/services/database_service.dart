@@ -6,7 +6,6 @@ class DatabaseService {
   static final DatabaseService instance = DatabaseService._init();
   DatabaseService._init();
 
-  // ── USUARIOS ──────────────────────────────────────────
   Future<List<Usuario>> obtenerUsuarios() async {
     final prefs = await SharedPreferences.getInstance();
     final data = prefs.getString('usuarios') ?? '[]';
@@ -46,7 +45,6 @@ class DatabaseService {
     return usuarios.any((u) => u.email == email);
   }
 
-  // ── CATEGORÍAS (estáticas para web) ───────────────────
   List<Map<String, dynamic>> obtenerCategorias() {
     return [
       {'id': 1, 'nombre': 'Salario', 'icono': 'work', 'tipo': 'ingreso'},
